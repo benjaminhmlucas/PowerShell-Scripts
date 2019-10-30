@@ -11,7 +11,7 @@
 #-- BL         1.0.0.0 10/30/2019
 ############################################################>
 param (
-    [Parameter(Mandatory=$true,
+    [Parameter(
     HelpMessage = "'`$true' to set passwords to not expire, Hit Enter to turn on password expiration.")]
     [bool]$setPasswordNeverExpires = $false
 )
