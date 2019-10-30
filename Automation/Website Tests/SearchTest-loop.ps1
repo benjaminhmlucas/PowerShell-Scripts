@@ -7,26 +7,15 @@
 #-- History: Created in August 2019 
 #-- BL         1.0.0.0 10/30/2019
 ###########################################################
+
+#---VARIABLES REGION
+
 $counter = 1
 $numberOfTabs = 30 #set the number of tabes you want to open
 $searchTerm = "it doesn't matter" #term to search for
 $searchToUse = "Bing" #--for google change to "Google"
 
-while($counter -le $numberOfTabs){  
-     searchSite -SearchFor ($searchTerm+$counter) -Use "Bing"
-     $counter = ($counter + 1)
-}
-
-
-$Edges = Get-Process | Where-Object{$_.Name -like "MicrosoftEdge"}
-$Explorers = Get-Process | Where-Object{$_.Name -like "iexplore"}
-forEach($edgeProcess in $Edges){
-    Stop-Process -Name $edgeProcess.Name
-}
-forEach($explorerProcess in $Explorers){
-    Stop-Process -Name $explorerProcess.Name
-}    
-
+#---Function Region
 function searchSite{
         [CmdletBinding()]
     Param(
@@ -83,3 +72,21 @@ function searchSite{
 	    Write-Host
     }
 }
+
+
+#---Execution Region
+while($counter -le $numberOfTabs){  
+     searchSite -SearchFor ($searchTerm+$counter) -Use "Bing"
+     $counter = ($counter + 1)
+}
+
+
+$Edges = Get-Process | Where-Object{$_.Name -like "MicrosoftEdge"}
+$Explorers = Get-Process | Where-Object{$_.Name -like "iexplore"}
+forEach($edgeProcess in $Edges){
+    Stop-Process -Name $edgeProcess.Name
+}
+forEach($explorerProcess in $Explorers){
+    Stop-Process -Name $explorerProcess.Name
+}    
+
