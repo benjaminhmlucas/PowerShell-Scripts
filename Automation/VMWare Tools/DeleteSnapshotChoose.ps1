@@ -156,7 +156,7 @@ if($response -eq 'y'){
     forEach ($VM in $VMs){
         $Snapshots = get-snapshot -vm $VM
         Write-host ("Removing Snapshot: "+$Snapshots.get($SnapToDeleteIndex)+" from VM: "+$VM.Name) -ForegroundColor red
-        #Remove-Snapshot -Snapshot $Snapshots.get(0) -Confirm:$false
+        Remove-Snapshot -Snapshot $Snapshots.get($SnapToDeleteIndex) -Confirm:$false
     }
 
 }else{
@@ -198,7 +198,7 @@ forEach ($VM in $VMsWithDifferingSnaps){
     if($response -eq 'y'){
         $Snapshots = get-snapshot -vm $VM
         Write-host ("Removing Snapshot: "+$Snapshots.get($SnapToDeleteIndex)+" from VM: "+$VM.Name) -ForegroundColor red
-        #Remove-Snapshot -Snapshot $Snapshots.get(0) -Confirm:$false
+        Remove-Snapshot -Snapshot $Snapshots.get($SnapToDeleteIndex) -Confirm:$false
 
 
     }else{
