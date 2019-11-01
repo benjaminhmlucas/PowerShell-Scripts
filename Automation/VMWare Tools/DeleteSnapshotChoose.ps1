@@ -36,14 +36,13 @@ function listVMSnaps{
     [string]$VMToGetSnapListFrom
     )
     $ListNumberCounter = 1
-    $Snapshots = get-snapshot -vm $VMToGetSnapListFrom
-    write-host ("`nChoose a Snapshot to Delete:")
+    $Snapshots = get-snapshot -vm $VMToGetSnapListFrom | Select -Unique Name
+    write-host ("`nChoose a Snapshot to Delete:"+$VMToGetSnapListFrom+":")
     forEach ($Snap in $Snapshots){
         write-host ("("+ $ListNumberCounter++ +"): " + $Snap.name) -ForegroundColor Green
     
     }     
 }
-
 function quitOrContinueOption{
     Write-Host "`nType: " -nonewline
     Write-Host "'q' + [Enter]" -foregroundcolor red -nonewline
@@ -63,7 +62,7 @@ function quitSkipOrContinueOption{
     Write-Host " to QUIT" 
     Write-Host "Type: " -nonewline
     Write-Host "'s'" -foregroundcolor green -nonewline
-    Write-Host " to skip VM"
+    Write-Host " to skip VM"  
     Write-Host "Type: " -nonewline
     Write-Host "[Enter]" -foregroundcolor green -nonewline
     $response = Read-Host " to CONTINUE" 
@@ -76,21 +75,23 @@ function quitSkipOrContinueOption{
     }
 }
 #Variable Region
-$DomainController = get-vm | Where-Object {$_.Name -like ('*'+$DomainControllerName+'*')}
-$DomainControllerSnaps = get-snapshot -vm $DomainController #snapshots should match Domain Controller's snapshots
 $ListNumberCounter = 1 #written to host number signifying the number of the snapshot for that VM
-$VMsWithDifferingSnaps = @() #list of snaps with differing number from the average or snapshot names mismatched from the Domain Controller
+$VMsWithDifferingSnaps = @() #list of snaps with differing number from the average or snapshot names mismatched from DC01
 [bool]$SnapsAreDifferent = $false  
 $SnapToDeleteIndex = -1
 $skipSnap = $false
 
 #Execution Region
 connectVIServers
-$VMs = Get-VM | Where-Object {$_.name -notlike ('*'+$ServersToExclude+'*')} #All VMs
+$VMs = Get-VM | Where-Object {$_.name -notlike ('*'+$ServersToExclude+'*')}   | Sort-Object | Get-Unique #All VMs
+$DomainController = get-vm | Where-Object {$_.Name -like ('*'+$DomainControllerName+'*')}  | Get-Unique
+$DomainControllerSnaps = get-snapshot -vm $DomainController  | Select -Unique Name #snapshots should match Domain Controller's snapshots
 #check snapshot differences
 forEach ($VM in $VMs){
     $snapCounter = 0
-    $Snapshots = get-snapshot -vm $VM
+    $Snapshots = get-snapshot -vm $VM | Select -Unique Name
+    #listVMSnaps $DC01 #This line for debugging
+    #listVMSnaps $VM #This line for debugging
     #check number of snapshot differences from the Domain Controller
     if($DomainControllerSnaps.Length -ne $Snapshots.Length){
         $SnapsAreDifferent = $true
@@ -99,12 +100,11 @@ forEach ($VM in $VMs){
     } else {
         #check snapshot with different names from the Domain Controller       
         forEach ($Snap in $Snapshots){
-            if($Snap.Name -ne ($DomainControllerSnaps.Get($snapCounter)).name){
+            if($Snap.Name -ne ($DomainControllerSnaps.Get($snapCounter++)).name){
                 $SnapsAreDifferent = $true
                 $VMsWithDifferingSnaps += ,$VM
                 $VMs = $VMs | Where-Object {$_.Name -ne $VM.Name}
             }
-            $snapCounter = $snapCounter + 1
         }        
     }
 }
@@ -127,17 +127,17 @@ Write-Host "`n"
 #List Snapshots on VMs to delete
 listVMSnaps $DomainController
 
-while(($SnapToDeleteIndex -lt 0) -or ($SnapToDeleteIndex -ge $Snapshots.length) -or ($SnapToDeleteIndex -isnot [int])){
+while(($SnapToDeleteIndex -lt 0) -or ($SnapToDeleteIndex -gt $Snapshots.length) -or ($SnapToDeleteIndex -isnot [int])){
     $SnapToDeleteIndex = Read-Host "`nPlease enter the index number of the snapshot you want to delete"
     try{
         $SnapToDeleteIndex = ($SnapToDeleteIndex-1)
-        if(($SnapToDeleteIndex -lt 0) -or ($SnapToDeleteIndex -ge $Snapshots.length)-or ($SnapToDeleteIndex -isnot [int])){
+        if(($SnapToDeleteIndex -lt 0) -or ($SnapToDeleteIndex -gt $Snapshots.length)-or ($SnapToDeleteIndex -isnot [int])){
             write-host "Please enter a number! Please pick one of the green numbers to the left of the snapshot names.`n" -foreground red
-            listVMSnaps $DomainController
+            listVMSnaps $DC01
         }
     }catch{
          write-host "Incorrect snapshot number! Please pick one of the green numbers to the left of the snapshot names.`n" -foreground red
-         listVMSnaps $DomainController
+         listVMSnaps $DC01
     }
     
 
@@ -145,9 +145,10 @@ while(($SnapToDeleteIndex -lt 0) -or ($SnapToDeleteIndex -ge $Snapshots.length) 
 
 forEach ($VM in $VMs)
 {
+    $Snapshots = get-snapshot -vm $VM | Select -Unique Name
     write-host $VM.name -NoNewline -ForegroundColor green
     write-host "-->> Snapshot that will be deleted: " -NoNewline
-    write-host $Snapshots.get(($SnapToDeleteIndex)) -ForegroundColor Red
+    write-host $Snapshots.get($SnapToDeleteIndex).name -ForegroundColor Red
 }
 
 $response = Read-Host "Are You Sure You want to delete these Snapshots? Please look at list, they will be gone forever!!` 
@@ -155,9 +156,10 @@ $response = Read-Host "Are You Sure You want to delete these Snapshots? Please l
 
 if($response -eq 'y'){
     forEach ($VM in $VMs){
-        $Snapshots = get-snapshot -vm $VM
+        $Snapshots = get-snapshot -vm $VM | Select -Unique Name
         Write-host ("Removing Snapshot: "+$Snapshots.get($SnapToDeleteIndex)+" from VM: "+$VM.Name) -ForegroundColor red
-        Remove-Snapshot -Snapshot $Snapshots.get($SnapToDeleteIndex) -Confirm:$false
+        $SnapToDelete = Get-Snapshot $VM -Name $Snapshots.get($SnapToDeleteIndex).name
+        Remove-Snapshot -Snapshot $SnapToDelete -Confirm:$false
     }
 
 }else{
@@ -166,14 +168,15 @@ if($response -eq 'y'){
     exit
 }
 
-write-host "Now would you like to deal with the VMs with differing snapshots?"
+write-host "`nNow would you like to deal with the VMs with differing snapshots?"
 quitOrContinueOption
 
 forEach ($VM in $VMsWithDifferingSnaps){
-    Write-Host ($VM.Name + " Snapshots:")
+    Write-Host ("`n"+$VM.Name + " Snapshots:")
     listVMSnaps $VM
     quitSkipOrContinueOption
     $SnapToDeleteIndex = -1
+    $Snapshots = get-snapshot -vm $VM | Select -Unique Name
     if(!($skipSanp)){
         while(($SnapToDeleteIndex -lt 0) -or ($SnapToDeleteIndex -ge $Snapshots.length) -or ($SnapToDeleteIndex -isnot [int])){
             $SnapToDeleteIndex = Read-Host "`nPlease enter the index number of the snapshot you want to delete"
@@ -187,20 +190,20 @@ forEach ($VM in $VMsWithDifferingSnaps){
                  write-host "Incorrect snapshot number! Please pick one of the green numbers to the left of the snapshot names.`n" -foreground red
                  listVMSnaps $VM.Name
             }
-        }        
+       }        
     }
     $skipSnap = $false
     write-host $VM.name -NoNewline -ForegroundColor green
     write-host "-->> Snapshot that will be deleted: " -NoNewline
-    write-host $Snapshots.get(($SnapToDeleteIndex)) -ForegroundColor Red
+    write-host $Snapshots.get($SnapToDeleteIndex).name -ForegroundColor Red
     $response = Read-Host "Are You Sure You want to delete these Snapshots? Please look at list, they will be gone forever!!` 
     -->>Type 'y' to delete these snapshots!!"
 
     if($response -eq 'y'){
-        $Snapshots = get-snapshot -vm $VM
+        $Snapshots = get-snapshot -vm $VM | Select -Unique Name
         Write-host ("Removing Snapshot: "+$Snapshots.get($SnapToDeleteIndex)+" from VM: "+$VM.Name) -ForegroundColor red
-        Remove-Snapshot -Snapshot $Snapshots.get($SnapToDeleteIndex) -Confirm:$false
-
+        $SnapToDelete = Get-Snapshot $VM -Name $Snapshots.get($SnapToDeleteIndex).name
+        Remove-Snapshot -Snapshot $SnapToDelete -Confirm:$false
 
     }else{
         Write-host "Operation Cancelled, moving to next VM"
