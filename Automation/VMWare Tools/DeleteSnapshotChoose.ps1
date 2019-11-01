@@ -9,6 +9,7 @@
 #--  
 #-- History: Created in October 2019 
 #-- BL         1.0.0.0 10/30/2019
+#-- BL         1.0.0.0 11/1/2019 Fixed Snapshot Redundancy issue when connecting to ESX and VCenter simultaneously
 ###########################################################
 import-module vmware.vimautomation.core
 Add-Type -AssemblyName System.Windows.Forms
