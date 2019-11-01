@@ -21,13 +21,13 @@ $ServersToExclude = "<Name pattern for any VMs you don't want to snap>"
 
 #function region
 function connectVIServers{
-#Connect-VIServer -Server '<ESX Server Name/IP>' -user '<username>' -Password '<Password>'>>Add more to connect to more ESX servers
-Connect-VIServer -Server $EsxServer -user $EsxUser -Password $ESXPassword
+    #Connect-VIServer -Server '<ESX Server Name/IP>' -user '<username>' -Password '<Password>'>>Add more to connect to more ESX servers
+    Connect-VIServer -Server $EsxServer -user $EsxUser -Password $ESXPassword
 }
 
 function disconnectVIServers{
-#Connect-VIServer -Server '<ESX Server Name/IP>' -Confirm:$false >>corresponds to multiple additions for connectVIServer
-Connect-VIServer -Server $EsxServer -Confirm:$false
+    #Connect-VIServer -Server '<ESX Server Name/IP>' -Confirm:$false >>corresponds to multiple additions for connectVIServer
+    Connect-VIServer -Server $EsxServer -Confirm:$false
 }
 
 function listVMSnaps{
