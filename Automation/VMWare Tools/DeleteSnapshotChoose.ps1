@@ -92,7 +92,7 @@ forEach ($VM in $VMs){
     $snapCounter = 0
     $Snapshots = get-snapshot -vm $VM
     #check number of snapshot differences from the Domain Controller
-    if($DomainControllerSnaps.Count -ne $Snapshots.Length){
+    if($DomainControllerSnaps.Length -ne $Snapshots.Length){
         $SnapsAreDifferent = $true
         $VMsWithDifferingSnaps += ,$VM
         $VMs = $VMs | Where-Object {$_.Name -ne $VM.Name}
