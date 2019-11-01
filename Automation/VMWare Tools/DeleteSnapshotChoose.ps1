@@ -37,7 +37,7 @@ function listVMSnaps{
     )
     $ListNumberCounter = 1
     $Snapshots = get-snapshot -vm $VMToGetSnapListFrom
-    write-host ("Choose a Snapshot to Delete:")
+    write-host ("`nChoose a Snapshot to Delete:")
     forEach ($Snap in $Snapshots){
         write-host ("("+ $ListNumberCounter++ +"): " + $Snap.name) -ForegroundColor Green
     
@@ -63,6 +63,7 @@ function quitSkipOrContinueOption{
     Write-Host " to QUIT" 
     Write-Host "Type: " -nonewline
     Write-Host "'s'" -foregroundcolor green -nonewline
+    Write-Host " to skip VM"
     Write-Host "Type: " -nonewline
     Write-Host "[Enter]" -foregroundcolor green -nonewline
     $response = Read-Host " to CONTINUE" 
