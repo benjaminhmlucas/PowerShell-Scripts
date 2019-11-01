@@ -78,7 +78,6 @@ function quitSkipOrContinueOption{
 $DomainController = get-vm | Where-Object {$_.Name -like ('*'+$DomainControllerName+'*')}
 $DomainControllerSnaps = get-snapshot -vm $DomainController #snapshots should match Domain Controller's snapshots
 $ListNumberCounter = 1 #written to host number signifying the number of the snapshot for that VM
-$VMs = Get-VM | Where-Object {$_.name -notlike ('*'+$ServersToExclude+'*')} #All VMs
 $VMsWithDifferingSnaps = @() #list of snaps with differing number from the average or snapshot names mismatched from the Domain Controller
 [bool]$SnapsAreDifferent = $false  
 $SnapToDeleteIndex = -1
@@ -86,6 +85,7 @@ $skipSnap = $false
 
 #Execution Region
 connectVIServers
+$VMs = Get-VM | Where-Object {$_.name -notlike ('*'+$ServersToExclude+'*')} #All VMs
 #check snapshot differences
 forEach ($VM in $VMs){
     $snapCounter = 0
