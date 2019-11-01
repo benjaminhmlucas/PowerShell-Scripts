@@ -177,7 +177,7 @@ forEach ($VM in $VMsWithDifferingSnaps){
     quitSkipOrContinueOption
     $SnapToDeleteIndex = -1
     $Snapshots = get-snapshot -vm $VM | Select -Unique Name
-    if(!($skipSanp)){
+    if(!($skipSnap)){
         while(($SnapToDeleteIndex -lt 0) -or ($SnapToDeleteIndex -ge $Snapshots.length) -or ($SnapToDeleteIndex -isnot [int])){
             $SnapToDeleteIndex = Read-Host "`nPlease enter the index number of the snapshot you want to delete"
             try{
