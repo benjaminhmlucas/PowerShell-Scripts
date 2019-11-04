@@ -42,7 +42,7 @@ Write-Host The current time is $ScriptStartTime
 Connect-VIServer -Server '<ESX Server Name/IP>' -user '<username>' -Password '<Password>'
 
 
-$VMs = Get-VM
+$VMs = Get-VM | Sort-Object | Get-Unique
 #Disconnect CD
 #run through the vm and disconnect the items in the CD Drives for each and set to NoMedia.
 Write-Host Disconnecting CD drives
@@ -64,10 +64,10 @@ Write-Host "All CD that were connected should now be disconnected"
 Write-Host "CONTINUING"
 
 #Take Snapshots for each VM using input name from above
-$VMs = Get-VM
+$VMs = Get-VM  | Sort-Object | Get-Unique
 forEach ($VM in $VMs)
 {
-  $Snapshots = get-snapshot -vm $VM
+  $Snapshots = get-snapshot -vm $VM  | Sort-Object | Select -Unique Name
   write-host "Here is the list of existing snapshots: $Snapshots"
   Write-host "IGNORE any red that occurrs in this section"
   New-Snapshot -VM $VM -Name $SnapshotName
