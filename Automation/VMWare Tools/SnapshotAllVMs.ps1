@@ -67,7 +67,7 @@ Write-Host "CONTINUING"
 $VMs = Get-VM  | Sort-Object | Get-Unique
 forEach ($VM in $VMs)
 {
-  $Snapshots = get-snapshot -vm $VM  | Sort-Object | Select -Unique Name
+  $Snapshots = get-snapshot -vm $VM  | Sort-Object
   write-host "Here is the list of existing snapshots: $Snapshots"
   Write-host "IGNORE any red that occurrs in this section"
   New-Snapshot -VM $VM -Name $SnapshotName
