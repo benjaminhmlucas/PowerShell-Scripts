@@ -3,8 +3,9 @@
 #-- Created: 10/30/2019
 #-- Author: Ben Lucas 
 #-- DESCRIPTION
-#--     Sets all accounts with formats that you choose (ex:???.* and ??.*) to expire or not depeneding on passed in variable.
-#--     Line 18 will allow you to filter by name patterns but needs to be modified for specific name schema
+#--     Sets all accounts with formats that you choose (ex:???.* and ??.*) to expire or not depeneding on passed in variable. 
+#--     Sets account password to chosen sting line 16. Line 22 will allow you to filter by name patterns but needs to be modified 
+#--     for specific name schema.
 #-- PARAMETER setPasswordExpirationTo
 #--     Type anything and hit [Enter] to set passwords to not expire, Type nothing and hit [Enter] to turn on password expiration.
 #-- History: Created in August 2019 
