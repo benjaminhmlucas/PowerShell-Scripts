@@ -8,16 +8,16 @@
 ###########################################################
 
 #Get Admin Credentials
-$global:user = Get-Credential -Credential "ncc1234\da.sqt.tester"
+$global:user = Get-Credential -Credential "<domain\credential.user>"
 
 #Get Start time
 $ScriptStartTime = (Get-Date)
 Write-Host The current time is $ScriptStartTime
 
 #Get AD Module
-if(Test-WSMan DC01 -ErrorAction SilentlyContinue){
+if(Test-WSMan <Domain Controller> -ErrorAction SilentlyContinue){
     try{
-        $sess = New-PSSession -ComputerName DC01 -Credential $global:user    
+        $sess = New-PSSession -ComputerName <Domain Controller> -Credential $global:user    
         Write-host "Connected, Getting AD Module"
         Import-Module ActiveDirectory -PSSession $sess
     }Catch{
@@ -27,9 +27,9 @@ if(Test-WSMan DC01 -ErrorAction SilentlyContinue){
 
 }
 
-$DomainControllersToTestList = Get-ADComputer -Filter * -Credential $global:user | Where-Object {$_.DistinguishedName -like "*Domain Controllers*"} #this variable holds all Domain Controllers are used for the test
-$MemberServersToTestList = Get-ADComputer -Filter * -Credential $global:user | Where-Object {$_.DistinguishedName -like "*CANES Member Servers*"} #this variable holds all Windows Member Servers are used for the test
-$WorkstationsToTestList = Get-ADComputer -Filter * -Credential $global:user | Where-Object {$_.DistinguishedName -like "*CANES Computers*"} #this variable holds all Windows Member Servers are used for the test
+$DomainControllersToTestList = Get-ADComputer -Filter * -Credential $global:user | Where-Object {$_.DistinguishedName -like "*<Domain Controller OU>*"} #this variable holds all Domain Controllers are used for the test
+$MemberServersToTestList = Get-ADComputer -Filter * -Credential $global:user | Where-Object {$_.DistinguishedName -like "*<Member Server OU>*"} #this variable holds all Windows Member Servers are used for the test
+$WorkstationsToTestList = Get-ADComputer -Filter * -Credential $global:user | Where-Object {$_.DistinguishedName -like "*<Workstation OU>*"} #this variable holds all Windows Member Servers are used for the test
 
 $FullComputerTestList = @()
 foreach($comp in $DomainControllersToTestList){$FullComputerTestList+=$comp}
