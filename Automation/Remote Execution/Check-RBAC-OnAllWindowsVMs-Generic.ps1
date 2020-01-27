@@ -38,43 +38,31 @@ if(Test-WSMan $global:DC -ErrorAction SilentlyContinue){
 
 }
 
-$DomainControllersToTestList = Get-ADComputer -Filter * -Credential $global:DAUser | Where-Object {$_.DistinguishedName -like $global:domainControllerOU -or $_.DistinguishedName -like "*MCA*"}  | Sort-Object -Property name #this variable holds all Domain Controllers are used for the test
-$MemberServersToTestList = Get-ADComputer -Filter * -Credential $global:DAUser | Where-Object {($_.DistinguishedName -like $global:memberServerOU -and $_.name -ne "VCSA") -and ($_.DistinguishedName -like $global:memberServerOU -and $_.name -ne "MCA01")}  | Sort-Object -Property name #this variable holds all Windows Member Servers are used for the test
-$WorkstationsToTestList = Get-ADComputer -Filter * -Credential $global:DAUser | Where-Object {$_.DistinguishedName -like $global:workstationOU -and $_.name -like "*U-WS00V1*"} #single workstation with PSRemoting enabled
-#$WorkstationsToTestList = Get-ADComputer -Filter * -Credential $global:DAUser | Where-Object {$_.DistinguishedName -like $global:workstationOU} #this variable holds all Windows Workstations that are used for the test
+$DomainControllersToTestList = Get-ADComputer -Filter * -Credential $global:DAUser | Where-Object {$_.DistinguishedName -like $global:domainControllerOU -or $_.DistinguishedName -like "*MCA*"} | Sort-Object -Property name #this variable holds all Domain Controllers are used for the test
+$MemberServersToTestList = Get-ADComputer -Filter * -Credential $global:DAUser | Where-Object {($_.DistinguishedName -like $global:memberServerOU -and $_.name -ne "VCSA") -and ($_.DistinguishedName -like $global:memberServerOU -and $_.name -ne "MCA01")} | Sort-Object -Property name #this variable holds all Windows Member Servers are used for the test
+$WorkstationsToTestList = Get-ADComputer -Filter * -Credential $global:DAUser | Where-Object {$_.DistinguishedName -like $global:workstationOU} | Sort-Object -Property name #this variable holds all Windows Workstations that are used for the test
+#$WorkstationsToTestList = Get-ADComputer -Filter * -Credential $global:DAUser | Where-Object {$_.DistinguishedName -like $global:workstationOU -and $_.name -like "*U-WS00V1*"} #single workstation with PSRemoting enabled
 
 $FullComputerTestList = @()
 foreach($comp in $DomainControllersToTestList){$FullComputerTestList+=$comp}
 foreach($comp in $MemberServersToTestList){$FullComputerTestList+=$comp}
 foreach($comp in $WorkstationsToTestList){$FullComputerTestList+=$comp}
+$FullComputerTestList = $FullComputerTestList
 
 foreach($comp in $FullComputerTestList){
-    
-    If({$comp.DistinguishedName -like $global:domainControllerOU -or $comp.DistinguishedName -like "*MCA*"}){$currentUser = $global:DAUser}
-    If($comp.DistinguishedName -like $global:memberServerOU -and $comp.DistinguishedName -notlike "*MCA*"){$currentUser = $global:SAUser}
-    If($comp.DistinguishedName -like $global:workstationOU){$currentUser = $global:wauser}
-    
-    if(Test-WSMan $comp.Name -ErrorAction SilentlyContinue){
-        
-        $output = Invoke-Command -Computername $comp.name -ScriptBlock{
-            $VerbosePreference='Continue';
+    foreach($credential in $global:credentialList){
+        if(Test-WSMan $comp.Name -ErrorAction SilentlyContinue){
+            $output = Invoke-Command -Computername $comp.name -ScriptBlock{
+                $VerbosePreference='Continue';
                 
-            Write-Host ("----------------------------------------------------------")
-            write-host ($env:USERNAME+" is currently connected to: " + $env:COMPUTERNAME);
-            Write-Host ("----------------------------------------------------------")
-            try{
-            #######CODE TO RUN ON REMOTE COMPUTER#######
+                Write-Host ("----------------------------------------------------------")
+                write-host ($env:USERNAME +" is currently connected to: " + $env:COMPUTERNAME);
+                Write-Host ("----------------------------------------------------------")
+       
+            } -Credential $credential -ErrorAction SilentlyContinue
 
-
-            ##############END OF REMOTE CODE############
-            }Catch{
-                write-host "An Error Occured:" -ForegroundColor Red;
-                write-host $Error[0] -ForegroundColor Red;
-            }       
-        
-        } -Credential $currentUser 
-
-    }else{write-host ("Test-WSMan FAILED on: "+$comp.name)}
+        }else{write-host ("Test-WSMan FAILED on: "+$comp.name+" Make Sure PSRemoting is enabled for this device.");break;}            
+    }
 }
 # Get Time and display
 $ScriptFinishTime = (Get-Date)
