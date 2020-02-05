@@ -47,6 +47,21 @@ foreach($comp in $DomainControllersToTestList){$FullComputerTestList+=$comp}
 foreach($comp in $MemberServersToTestList){$FullComputerTestList+=$comp}
 foreach($comp in $WorkstationsToTestList){$FullComputerTestList+=$comp}
 
+#remove copmuter that is running the script
+$FullComputerTestList = $FullComputerTestList | Where-Object {$_.distinguishedName -notlike ("*"+$global:ComputerScriptIsRunningFrom+"*")}
+
+#run script on current computer
+Write-Host ("----------------------------------------------------------")
+Write-Host ("Running test on this computer:")
+write-host ($env:USERNAME+" is currently connected to: " + $env:COMPUTERNAME);
+Write-Host ("----------------------------------------------------------")
+
+#This code should be identical to what entered below
+#This is code that is run on the computer that the script is being run on.
+###########Start Code Here############
+
+############End Code Here#############
+
 foreach($comp in $FullComputerTestList){
     
     If({$comp.DistinguishedName -like $global:domainControllerOU -or $comp.DistinguishedName -like "*MCA*"}){$currentUser = $global:DAUser}
@@ -62,6 +77,7 @@ foreach($comp in $FullComputerTestList){
             write-host ($env:USERNAME+" is currently connected to: " + $env:COMPUTERNAME);
             Write-Host ("----------------------------------------------------------")
             try{
+            #This code should be identical to what entered above
             #######CODE TO RUN ON REMOTE COMPUTER#######
 
 
