@@ -20,6 +20,8 @@ $global:domainControllerOU = "*Domain Controllers*"
 $global:memberServerOU = "*Member Servers*"
 $global:workstationOU = "*COMPUTERS*"
 
+$global:ComputerScriptIsRunningFrom = $env:COMPUTERNAME
+
 #Get Start time
 $ScriptStartTime = (Get-Date)
 Write-Host The current time is $ScriptStartTime
