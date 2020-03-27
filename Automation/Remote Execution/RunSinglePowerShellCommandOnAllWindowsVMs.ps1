@@ -39,6 +39,7 @@ if(Test-WSMan $global:DC -ErrorAction SilentlyContinue){
 
 }
 
+#Determines which machines to ping from based on OU
 $DomainControllersToTestList = Get-ADComputer -Filter * -Credential $global:DAUser | Where-Object {$_.DistinguishedName -like $global:domainControllerOU -or $_.DistinguishedName -like "*MCA*"}  | Sort-Object -Property name #this variable holds all Domain Controllers are used for the test
 $MemberServersToTestList = Get-ADComputer -Filter * -Credential $global:DAUser | Where-Object {($_.DistinguishedName -like $global:memberServerOU -and $_.name -ne "VCSA") -and ($_.DistinguishedName -like $global:memberServerOU -and $_.name -ne "MCA01")}  | Sort-Object -Property name #this variable holds all Windows Member Servers are used for the test
 $WorkstationsToTestList = Get-ADComputer -Filter * -Credential $global:DAUser | Where-Object {$_.DistinguishedName -like $global:workstationOU -and $_.name -like "*U-WS00V1*"} #single workstation with PSRemoting enabled
