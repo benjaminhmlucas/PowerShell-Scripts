@@ -4,7 +4,7 @@
 #-- Author: Ben Lucas
 #-- Description: Script that allows the user to ping every address listed on line 12.  
 #-- Controls for which VMs to Ping from are on lines 72-76.  Script will decide which user
-#-- to log in as based on OU(except MCA01). Tested when ran from inside domain. 
+#-- to log in as based on OU. Tested when ran from inside domain. 
 #-- Compatible with PowerShell 3 or greater
 #--
 #-- History: Created in January 2020 by Ben Lucas
