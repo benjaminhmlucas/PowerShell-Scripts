@@ -73,8 +73,10 @@ if(Test-Path -Path $srcFolder){
                 if($inFile[0].Path -eq $empty){
                     $inFile = ($srcFolder+$inFile+"\").replace(" ","")
                     $filesWithoutMatchesInDestination.Add($inFile)| Out-Null
+                    #write-Host ("Output No Match Reached: < "+$inFile+ " >END Output" )#Check Output
                 }else{
                     $filesWithoutMatchesInDestination.Add($inFile[0].Path)| Out-Null
+                    #write-Host ("Output No Match Reached: < "+$inFile[0].Path + " >END Output" )#Check Output
                 }                                
             }            
         }
@@ -93,10 +95,10 @@ if(Test-Path -Path $srcFolder){
                 if($outFile[0].Path -eq $empty){
                     $outFile = ($destFolder+$outFile+"\").replace(" ","")
                     $filesWithoutMatchesInSource.Add($outFile)| Out-Null
-                    write-Host ("Output No Match Reached: < "+$outFile+ " >END Output" )
+                    #write-Host ("Output No Match Reached: < "+$outFile+ " >END Output" )#Check Output
                 }else{
                     $filesWithoutMatchesInSource.Add($outFile[0].Path)| Out-Null
-                    write-Host ("Output No Match Reached: < "+$outFile[0].Path + " >END Output" )
+                    #write-Host ("Output No Match Reached: < "+$outFile[0].Path + " >END Output" )#Check Output
                 }                                
             }            
         }
