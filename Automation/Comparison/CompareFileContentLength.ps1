@@ -26,7 +26,7 @@ if(Test-Path -Path $srcFolder){
         
         gci $srcFolder -Recurse  | ForEach-Object{
             $OriginalFolderContents.Add($_)| Out-Null   
-            write-host (""+$_.FullName+" #File Length: "+ $_.Length)#Check Output#
+            #write-host (""+$_.FullName+" #File Length: "+ $_.Length)#Check Output#
         }
         
         Write-host ""
@@ -35,7 +35,7 @@ if(Test-Path -Path $srcFolder){
         
         gci $destFolder -Recurse  | ForEach-Object{
             $CopyToFolderContents.Add($_) | Out-Null  
-            write-host (""+$_.FullName+" #File Length: "+ $_.Length)#Check Output#
+            #write-host (""+$_.FullName+" #File Length: "+ $_.Length)#Check Output#
         }
         
         Write-host ""
