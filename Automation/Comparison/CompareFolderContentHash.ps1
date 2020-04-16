@@ -58,9 +58,9 @@ if(Test-Path -Path $srcFolder){
                         Write-Host "----------------------------------------------------------------------"
                         Write-Host "Some Files Were Different:"  -ForegroundColor Red
                         write-host ("InFile     : " + $inFile[1])
-                        write-host ("File Length: " + $inFile[0].Hash) -ForegroundColor Red
+                        write-host ("File Hash: " + $inFile[0].Hash) -ForegroundColor Red
                         write-host ("OutFile    : " + $outFile[1])
-                        write-host ("File Length: " + $outFile[0].Hash) -ForegroundColor Red
+                        write-host ("File Hash: " + $outFile[0].Hash) -ForegroundColor Red
                     }else{
                         Write-Host "----------------------------------------------------------------------"
                         Write-Host ("File Size Matched: "+$inFile[1])  -ForegroundColor Green                        
