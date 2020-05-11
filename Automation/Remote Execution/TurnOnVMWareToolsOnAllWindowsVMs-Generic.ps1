@@ -1,10 +1,9 @@
 ﻿###########################################################
-#-- Script: RunSinglePowerShellCommandOnAllWindowsVMs-Generic.ps1
-#-- Created: 1/24/2020
-#-- Author: Atlas Technologies Technologies
-#-- Description: A Template to run PowerShell commands on all Windows Servers and Workstations
-#-- History: Created in January 2020 by Ben Lucas
-#-- SSA         1.0.0.0 1/24/2020
+#-- Script: TurnOnVMWareToolsOnAllWindowsVMs.ps1
+#-- Created: 5/11/2020
+#-- Description: Turns on VMWare Tools for all Windows VMs
+#-- History: Created in May 2020 by Ben Lucas
+#-- SSA         1.0.0.0 5/11/2020
 ###########################################################
 
 #Get Admin Credentials
@@ -62,7 +61,20 @@ Write-Host ("----------------------------------------------------------")
 #This code should be identical to what entered below
 #This is code that is run on the computer that the script is being run on.
 ###########Start Code Here############
-
+$status = (Get-Service -DisplayName 'VMware Tools').Status
+Write-Host ("Tools are currently: $status")
+if($status -ne 'Running'){
+    try{
+        $result = Start-Service VMTools -ErrorAction SilentlyContinue
+        Write-Host ("VMTools Started!") -ForegroundColor Green
+    }catch{
+        Write-Host ("Something Went Wrong!") -ForegroundColor Green
+        Write-Host $result
+        write-host $PSItem.toString()
+    }
+}else{
+    Write-Host ("VMTools looks ok!") -ForegroundColor Green
+}
 ############End Code Here#############
 
 foreach($comp in $FullComputerTestList){
@@ -82,8 +94,20 @@ foreach($comp in $FullComputerTestList){
             try{
             #This code should be identical to what entered above
             #######CODE TO RUN ON REMOTE COMPUTER#######
-
-
+            $status = (Get-Service -DisplayName 'VMware Tools').Status
+            Write-Host ("Tools are currently: $status")
+            if($status -ne 'Running'){
+                try{
+                    $result = Start-Service VMTools -ErrorAction SilentlyContinue
+                    Write-Host ("VMTools Started!") -ForegroundColor Green
+                }catch{
+                    Write-Host ("Something Went Wrong!") -ForegroundColor Green
+                    Write-Host $result
+                    write-host $PSItem.toString()
+                }
+            }else{
+                Write-Host ("VMTools looks ok!") -ForegroundColor Green
+            }
             ##############END OF REMOTE CODE############
             }Catch{
                 write-host "An Error Occured:" -ForegroundColor Red;
