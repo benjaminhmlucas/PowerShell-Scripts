@@ -13,7 +13,7 @@
 #-- SAUser = <Server Admin User>
 #-- DAUser = <Domain Admin User>
 #-- WAUser = <Worksation Admin User>
-#-- Line 159 sets save location
+#-- Line 157 sets save location
 
 ##########FUNCTIONS################
 #If VMTools is not running on the windows machine, you can cause damage by shutting power off abruptly
@@ -135,7 +135,6 @@ foreach($hostIP in $Hosts){
     }
 }
 
-
 #get needed credentials
 
 #Manually Type password each time this is ran for each user
@@ -157,8 +156,6 @@ $WAUser = New-Object System.Management.Automation.PSCredential ("<WAUser>",$WAUs
 
 $BackupDir = "<Save Path for Exports>"
 mkdir -Path $BackupDir
-
-
 
 #Get list of VM
 $VMs = Get-VM
