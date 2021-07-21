@@ -1,4 +1,4 @@
-﻿###########################################################
+﻿############################################################y
 #-- Script: TurnOnAllServicesOnAllWindowsVMs.ps1
 #-- Created: 5/19/2020
 #-- Author: Ben Lucas, Atlas Technologies Technologies
@@ -7,13 +7,25 @@
 #-- >Checks to see which automatic services are off 
 #-- >Attempts to turn them on.
 #-- >Asks user if they want to run script again
-#-- Needs to be set:
-#-- Line 63-66 -> Set admin credential names, all accounts should have Default password
-#-- Line 69-74 -> Connection IPs to ESX hosts, enter one for each server
-#-- Line 87 -> VMName to DNS Name Conversion string
+#-- Cureently ignoring these triggered services:(CDPSvc,sppsvc,ScarSvr,RemoteRegistry,gpsvc,DoSvc,MSExchangeNotificationsBroker,WBioSrvc,tiledatamodelsvc)
 #-- History: Created in May 2020 by Ben Lucas
 #-- SSA         1.0.0.0 5/19/2020
+#-- SSA         1.0.0.1 6/24/2020  Modified ignored services
+#-- SSA         1.0.0.1 7/21/2021  Modified ignored services
+############################################################
+
 ###########################################################
+#-- Notes
+#-- This is set up for a system that uses RBAC for Domain admins, Server admins and workstations admins
+#-- SAUser = <Server Admin User>
+#-- DAUser = <Domain Admin User>
+#-- WAUser = <Worksation Admin User>
+#-- Needs to be set:
+#-- Line 89-101 -> Set admin credential names, all accounts should have Default password
+#-- Line 63 -> Connection IPs to ESX hosts, enter one for each server
+#-- Line 129 -> VMName to DNS Name Conversion string
+
+
 #region: elevate command
 # Get the ID and security principal of the current user account
 $myWindowsID = [System.Security.Principal.WindowsIdentity]::GetCurrent()
@@ -44,34 +56,64 @@ Add-Type -AssemblyName System.Windows.Forms
 
 #Get Start time
 $ScriptStartTime = (Get-Date)
-$BackupDate = (Get-Date -format ddMMMyyyy)
 Write-Host The current time is $ScriptStartTime
+$BackupDate = (Get-Date -format ddMMMyyyy)
+
+##Build a list of Hosts.  
+$Hosts = @("<list of ESX host names>")
 
 #Load the VMWare PowerCLI SnapIn so that PowerCLI commandlets can be used
-import-module vmware.vimautomation.core
+$SnapIn = "VMware.VimAutomation.Core"
+Import-Module -name $Snapin
 
+###THe below is needed to force connection to use TLS 1.2 
+[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12
+
+
+#Connect to an ESX host
+#Modify the below to fit your needs. One at a time. may want to manually migrate all machines to ESX01 if multiple hosts
+$global:cred = get-credential "<root>"#login name for ESX hosts-would need modification if you needed more than one  
+
+foreach($hostIP in $Hosts){
+    try{
+        Connect-VIServer -Server $hostIP -user $cred.UserName -Password $cred.GetNetworkCredential().Password -ErrorAction SilentlyContinue
+        if($? -eq $false){throw $error[0].exception}   
+    }catch [Exception]{
+        Read-Host "Wrong Credentials for ESX host. Hit enter to exit..." -
+        exit
+    }
+}
+
+#get needed credentials
+
+#Manually Type password each time this is ran for each user
+$DAUser = get-credential "<DAUser>"
+$WAUser = get-credential "<WAUser>"
+$SAUser = get-credential "<SAUser>"
+
+#Hard Code Password so it doesn't need to be typed
+<#$DAUserPwd = ConvertTo-SecureString -String "<Plain Text Password>" -AsPlainText -Force
+$SAUserPwd = ConvertTo-SecureString -String "<Plain Text Password>" -AsPlainText -Force
+$WAUserPwd = ConvertTo-SecureString -String "<Plain Text Password>" -AsPlainText -Force
+
+$DAUser = New-Object System.Management.Automation.PSCredential ("<DAUser>",$DAUserPwd)
+$SAUser = New-Object System.Management.Automation.PSCredential ("<SAUser>",$SAUserPwd)
+$WAUser = New-Object System.Management.Automation.PSCredential ("<WAUser>",$WAUserPwd)#>
+
+$ErrorActionPreference = 'Continue'
+
+#Select Statement to get Services
+$selectStatment = "select * from win32_service where StartMode = 'Auto' AND State <> 'Running' AND name <> 'CDPSvc' AND name <>'sppsvc' AND name <> 'SCardSvr' AND name <>'RemoteRegistry' AND name <> 'gpsvc' AND name <> 'DoSvc' AND name <> 'MSExchangeNotificationsBroker' AND name <> 'WbioSrvc' AND name <> 'tiledatamodelsvc'"
 #Deal with Logfile creation/clearing
 $logFile = ".\ServiceStatusResults.txt" #file Path must exists
 if(!(Test-Path $logFile)){
-    $global:servicesListtatusResults = New-Item -Path ".\" -Name "ServiceStatusResults.txt" -ItemType "file"
+    $global:servicesListtatusResults = New-Item -Path ".\" -Name ".txt" -ItemType "file"
     write-host ("Log file didn't exist, I created a new one here->: "+$global:servicesListtatusResults.Fullname)
 }else{
     Set-Content $logFile -Value ""
     write-host ("Old Log data erased, I am saving results here->: "+$logFile)
 }
-# Get needed credentials
-$global:DAUser = Get-Credential -Credential "<domain>\<domain admin>" #domain admin
-$global:rtUser = New-Object System.Management.Automation.PSCredential ("<esx admin>",$global:DAUser.Password) #esx admin
-$global:WAUser = New-Object System.Management.Automation.PSCredential ("<domain>\<workstation admin>",$global:DAUser.Password) #workstation admin
-$global:SAUser = New-Object System.Management.Automation.PSCredential ("<domain>\<server admin>",$global:DAUser.Password) #server admin
-$global:cred = ""
-# ESX IPs
-$ESX01Address = '<IP Address of ESX Host>'
-#$ESX02Address = '<IP Address of ESX Host>'
-#$ESX03Address = '<IP Address of ESX Host>'
-#$ESX04Address = '<IP Address of ESX Host>'
-#$ESX05Address = '<IP Address of ESX Host>'
-#$ESX06Address = '<IP Address of ESX Host>'
+
 #List objects
 $global:servicesList = @()
 [HashTable]$global:servicesHashList = @{}
@@ -84,22 +126,7 @@ $VMs= @()
 # DNS Name is "WKS101"
 # You would enter this to remove the extra data:
 # $removeThisStringFromVMName = "MyDomain_"
-$removeThisStringFromVMName = ""
-
-#Connect to an ESX host
-#Modify the below to fit your needs. One at a time. may want to manually migrate all machines to ESX01 if multiple hosts
-try{
-    Connect-VIServer -Server $ESX01Address -Credential $global:rtUser -ErrorAction SilentlyContinue
-    #Connect-VIServer -Server $ESX02Address -Credential $global:rtUser -ErrorAction SilentlyContinue
-    #Connect-VIServer -Server $ESX03Address -Credential $global:rtUser -ErrorAction SilentlyContinue
-    #Connect-VIServer -Server $ESX04Address -Credential $global:rtUser -ErrorAction SilentlyContinue
-    #Connect-VIServer -Server $ESX05Address -Credential $global:rtUser -ErrorAction SilentlyContinue
-    #Connect-VIServer -Server $ESX06Address -Credential $global:rtUser -ErrorAction SilentlyContinue
-    if($? -eq $false){throw $error[0].exception}   
-}catch [Exception]{
-    Read-Host "Wrong Credentials for ESX host. Hit enter to exit..." 
-    exit
-}
+$removeThisStringFromVMName = "<Prefix/Suffix to remove>"
 
 #Gathers Data about which services are off on a single machine
 function Check-AutomaticServices{
@@ -109,22 +136,31 @@ function Check-AutomaticServices{
         $singleService = ""     
     )
     $Global:VM = Get-VM | Where-object {$_.name -like ("*"+$MachineName)} 
+    
     if($Global:VM.PowerState -like "PoweredOn"){
         $VMName = $MachineName -replace $removeThisStringFromVMName,""
         if($Global:VM.GuestId -like "*Window*"){
-            $global:cred = $global:SAUser# default is server admin
-            if($VM.Name -like "*<DomainControllerNamingConvention>*"){
+            $global:cred = $global:SAUser
+            if($VM.Name -like "*<Domain Controller Name common suffix/prefix>*"){
                 $global:cred = $global:DAUser
             }
-            if($VM.Name -like "*<WorkstationNamingConvention>*"){
+            if($VM.Name -like "*<Workstation name common suffix/prefix>*"){
                 $global:cred = $global:WAUser
-            }     
+            }        
+            write-host ("---------------------")     
+            write-host ("Checking VM:"+$VMName)     
             if($singleService -eq ""){
-                #We have to ignore four services that are off always on all VMs, unless needed (CDPSvc,sppsvc,ScarSvr,RemoteRegistry)
+                #We have to ignore four services that are off always on all VMs, unless needed (CDPSvc,sppsvc,ScarSvr,RemoteRegistry,gpsvc,DoSvc)
                 if($env:COMPUTERNAME -eq $VMName){#Check for computer that script is being run from to handle differently
-                    $global:servicesList = Get-WmiObject -ComputerName $VMName -Query "select * from win32_service where StartMode='Auto' AND State<>'Running' AND name<>'CDPSvc' AND name<>'sppsvc' AND name<>'SCardSvr' AND name<>'RemoteRegistry'"
+                    $global:servicesList = Get-WmiObject -ComputerName $VMName -Query $selectStatment
                 }else{
-                    $global:servicesList = Get-WmiObject -ComputerName $VMName -Query "select * from win32_service where StartMode='Auto' AND State<>'Running' AND name<>'CDPSvc' AND name<>'sppsvc' AND name<>'SCardSvr' AND name<>'RemoteRegistry'" -Credential $global:cred                
+                    try{
+                        $global:servicesList = Get-WmiObject -ComputerName $VMName -Query $selectStatment -Credential $global:cred -ErrorAction SilentlyContinue
+                        if($?){ <#DONOTHING#> } else { throw $error[0].Exception }
+                    } catch {
+                        Write-host ("Temporary-Benign-Error-Rerun-Script-When-Finished----------------------------------------------------------->") -ForegroundColor Red
+                        Write-host ("Access Denied on machine: " +$VMName+". While trying to get a Service List") -ForegroundColor Red
+                    }
                 }
             }else{
                 $global:servicesList = Get-WmiObject -ComputerName $VMName -Query "select * from win32_service where name='$singleService'" -Credential $global:cred
@@ -160,19 +196,19 @@ function Start-AllServices{
     if($Global:VM.PowerState -like "PoweredOn"){
         $VMName = $MachineName -replace $removeThisStringFromVMName,""
         if($Global:VM.GuestId -like "*Window*"){
-            $global:cred = $global:SAUser# default is server admin
-            if($VM.Name -like "*<DomainControllerNamingConvention>*"){
+            $global:cred = $global:SAUser
+            if($VM.Name -like "*<Domain Controller Name common suffix/prefix>*"){
                 $global:cred = $global:DAUser
             }
-            if($VM.Name -like "*<WorkstationNamingConvention>*"){
+            if($VM.Name -like "*<Workstation name common suffix/prefix>*"){
                 $global:cred = $global:WAUser
-            }     
+            }        
             if($singleService -eq ""){
-                #We have to ignore four services that are off always on all VMs, unless needed (CDPSvc,sppsvc,ScarSvr,RemoteRegistry)
+                #We have to ignore four services that are off always on all VMs, unless needed (CDPSvc,sppsvc,ScarSvr,RemoteRegistry,gpsvc,DoSvc)
                 if($env:COMPUTERNAME -eq $VMName){#Check for computer that script is being run from to handle differently
-                    $global:servicesList = Get-WmiObject -ComputerName $VMName -Query "select * from win32_service where StartMode='Auto' AND State<>'Running' AND name<>'CDPSvc' AND name<>'sppsvc' AND name<>'SCardSvr' AND name<>'RemoteRegistry'"
+                    $global:servicesList = Get-WmiObject -ComputerName $VMName -Query $selectStatment
                 }else{
-                    $global:servicesList = Get-WmiObject -ComputerName $VMName -Query "select * from win32_service where StartMode='Auto' AND State<>'Running' AND name<>'CDPSvc' AND name<>'sppsvc' AND name<>'SCardSvr' AND name<>'RemoteRegistry'" -Credential $global:cred                
+                    $global:servicesList = Get-WmiObject -ComputerName $VMName -Query $selectStatment -Credential $global:cred                
                 }
             }else{
                 $global:servicesList = Get-WmiObject -ComputerName $VMName -Query "select * from win32_service where name='$singleService'" -Credential $global:cred
@@ -275,6 +311,12 @@ Add-Content $logFile "!-----------------------------------------!"
 
 Invoke-Item $logFile
 
+# Get Finish time, compute and display total time script ran
+$ScriptFinishTime = (Get-Date)
+Write-Host "The current time is $ScriptFinishTime"
+$TimeForScript = (New-TimeSpan -Start $ScriptStartTime -End $ScriptFinishTime)
+Write-Host "The script ran for a total time in HH:MM:SS of $TimeForScript"
+
 write-host "-----------------------------------------------------------------------------------------------------------"
 write-host "Some Services may now be able to start due to other services that were just started.  Some services 
 can shut off again in a few minutes if there are certain issues.  If this is the first time you ran this script,
@@ -282,15 +324,18 @@ you may want to run it again and see if some of the services that remain off wil
 have started.  Recommended troubleshooting for services that remain off is log onto affected computer and check 
 settings and credentials for affected services."
 write-host "-----------------------------------------------------------------------------------------------------------"
-# read user input to rerun script if necessary
-$runAgain = read-Host "Would you like to rerun this script?[y to proceed, any other to quit]"
-if($runAgain.ToUpper() -eq 'Y'){
-	# We are not running "as Administrator" - so relaunch as administrator
-	Start-Process "$psHome\powershell.exe" -Verb Runas -ArgumentList "-File `"$($myInvocation.MyCommand.Definition)`""
+# read user input to close
+read-Host "I have done all I can do, Good-Bye!"
+
+#close connections!!
+foreach($hostIP in $Hosts){
+    Disconnect-VIServer -Server $hostIP -confirm:$false
 }
-Disconnect-VIServer -Server $ESX01Address -confirm:$false
-#Disconnect-VIServer -Server $ESX02Address -confirm:$false
-#Disconnect-VIServer -Server $ESX03Address -confirm:$false
-#Disconnect-VIServer -Server $ESX04Address -confirm:$false
-#Disconnect-VIServer -Server $ESX05Address -confirm:$false
-#Disconnect-VIServer -Server $ESX06Address -confirm:$false
+# Get Finish time, compute and display total time script ran
+$ScriptFinishTime = (Get-Date)
+Write-Host "The current time is $ScriptFinishTime"
+$TimeForScript = (New-TimeSpan -Start $ScriptStartTime -End $ScriptFinishTime)
+Write-Host "The script ran for a total time in HH:MM:SS of $TimeForScript"
+
+Read-host -Prompt "Do you want me to close this window now?  press ENTER to close"
+
