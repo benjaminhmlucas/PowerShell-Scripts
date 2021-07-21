@@ -13,7 +13,7 @@
 #-- SAUser = <Server Admin User>
 #-- DAUser = <Domain Admin User>
 #-- WAUser = <Worksation Admin User>
-#-- Line 157 sets save location><M<<ADKGRDKJAGJDGJKAEJGJK!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#-- Line 159 sets save location><M<<ADKGRDKJAGJDGJKAEJGJK!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 ##########FUNCTIONS################
 #If VMTools is not running on the windows machine, you can cause damage by shutting power off abruptly
@@ -28,10 +28,10 @@ function Check-VMTools{
         $VMName = $MachineName -replace "<Portion of ESX name that you may want to remove if AD name is different>",""
         if($Global:VM.GuestId -like "*Windows*"){
             $global:cred = $global:SAUser
-            if($VM.Name -like "*<Domain Controller Name common suffix>*"){
+            if($VM.Name -like "*<Domain Controller Name common suffix/prefix>*"){
                 $global:cred = $global:DAUser
             }
-            if($VM.Name -like "*<Workstation name common suffix>*"){
+            if($VM.Name -like "*<Workstation name common suffix/prefix>*"){
                 $global:cred = $global:WAUser
             }        
             Write-host "Checking VMTools Service on $VMName"
