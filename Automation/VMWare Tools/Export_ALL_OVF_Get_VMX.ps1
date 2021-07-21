@@ -13,7 +13,7 @@
 #-- SAUser = <Server Admin User>
 #-- DAUser = <Domain Admin User>
 #-- WAUser = <Worksation Admin User>
-#-- Line 159 sets save location><M<<ADKGRDKJAGJDGJKAEJGJK!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#-- Line 159 sets save location
 
 ##########FUNCTIONS################
 #If VMTools is not running on the windows machine, you can cause damage by shutting power off abruptly
